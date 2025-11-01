@@ -1,0 +1,16 @@
+{
+  "name": "backend-with-hitesh",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "The test project to learn backend techs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start":"node index.js"
+  },
+  "keywords": [
+    "node"
+  ],
+  "author": "Satpal singh",
+  "license": "ISC"
+}
