@@ -1,4 +1,4 @@
-// By using Promises
+// Wrapper By using Promises
 const asyncHandler = (requestHandler)=>{
     (req,res,next)=>{
         Promise.resolve(requestHandler(req,res,next))
@@ -7,7 +7,7 @@ const asyncHandler = (requestHandler)=>{
 }
 
 
-// By using the Try catch
+// Wrapper By using the Try catch
 const asyncHandler1 =(requestHandler)=>async (req,res,next)=>{
 try{
 await requestHandler(req,res,next)
