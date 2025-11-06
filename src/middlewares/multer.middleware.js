@@ -8,7 +8,7 @@ const storage = multer.diskStorage({
     //To give the unique names
     // const uniqueSuffix = Date.now() + "-" + Math.round(Math.round * 1e9);
     // cb(null, file.fieldname + "-" + uniqueSuffix);
-    cb(null, file.originalname);
+    cb(null, file.originalname.toLowerCase());
   },
 });
 
