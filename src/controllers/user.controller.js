@@ -164,8 +164,8 @@ const logOutUser = async (req, res) => {
   await User.findByIdAndUpdate(
     user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1, // this will remove the refresh token from Doc
       },
     },
     {
