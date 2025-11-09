@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
+import { Schema } from "mongoose";
 
 const options = {
   httpsOnly: true,
@@ -323,6 +324,152 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   return res.status(200).json(200, user, "coverImage updated successfully");
 });
 
+const getChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    throw new ApiError(400, "username is missing");
+  }
+
+  // aggregation is a method which accepting the condition or the pipelines argument
+  const channel = await User.aggregate([
+    // 1st pipeline
+    // In first pipeline we are getting the all channel with the username which will return a single channel
+    {
+      $match: {
+        username: username.toLowerCase(),
+      },
+    },
+    // 2nd pipeline
+    // lookup are basically works as a join and store value into a new variable or a key which is created by "as"
+    // getting subscribers of the channel which we are getting from the first pipeline
+    {
+      $lookup: {
+        from: "Subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    // 3rd pipeline
+    // getting the count of the channels that user subscribed from its channel which we are getting from the first pipeline
+    {
+      $lookup: {
+        from: "Subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    // 4th pipeline
+    // With add fields we can create or add fields in response
+    {
+      $addFields: {
+        // subscriberCount is a variable
+        // we are getting count or the length of subscribers by using the subscriber field created in the 2nd pipeline
+        subscribersCount: {
+          // size is a method used to return the length of the array
+          // "$subscribers" is a field name, need to add $ to access the value of an variable
+          $size: "$subscribers",
+        },
+        // channelsSubscribedToCount is a variable
+        // we are getting count or the length of subscribed channels by using the subscribedTo field created in the 2nd pipeline
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          // Cond is a method by helping this we can add field with the condition
+          // for example: in the following code we are returning the true false value based on the condition
+          // 1. If user subscribed te channel
+          // 2. return true other wise show false
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      // project is helping to return only specific value or fields worked like a select
+      $project: {
+        fullName: 1,
+        username: 1,
+        email: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+      },
+    },
+  ]);
+
+  if (!channel?.length) {
+    throw new ApiError(404, "Channel does not exist");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "Channel fetched successfully"));
+});
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new Schema.Types.ObjectId(req.user?._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        // nested Pipelines
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+                {
+                  $addFields: {
+                    // This will overwrite the "owner" field with the object which is stored in first index of array instead of returning the full array
+                    owner: {
+                      $isFirst: "$owner",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch history fetched successfully"
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -333,4 +480,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getChannelProfile,
+  getWatchHistory,
 };
