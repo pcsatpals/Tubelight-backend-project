@@ -25,7 +25,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (er) {
-    console.log(er);
     throw new ApiError(
       500,
       "Something went wrong while generating Refresh and Access token"
@@ -45,7 +44,6 @@ const registerUser = asyncHandler(async (req, res) => {
   // return res
 
   const { username, email, fullName, password } = req.body;
-  console.log(req.body);
   const isBodyValidate = [username, email, fullName, password].some(
     (field) => field.trim() != ""
   );
@@ -123,7 +121,6 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!user) throw new ApiError(400, "User does not exist");
 
   // Get methods from the user because we are getting user from the db and we have instance of user
-  // console.log(user);
   const isPasswordCorrect = await user.isPasswordCorrect(password);
 
   if (!isPasswordCorrect) {

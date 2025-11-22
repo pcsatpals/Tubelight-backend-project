@@ -43,6 +43,10 @@ const videoSchema = new Schema(
   }
 );
 
+videoSchema.methods.isOwner = async function (userId) {
+  return this.owner.equals(userId);
+};
+
 videoSchema.plugin(mongooseAggregatePaginate);
 
 export const Video = mongoose.model("Video", videoSchema);

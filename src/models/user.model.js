@@ -63,7 +63,6 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 };
 
 userSchema.methods.generateAccessToken = function () {
-  console.log(process.env.ACCESS_SECRET_TOKEN);
   return jwt.sign(
     {
       _id: this._id,

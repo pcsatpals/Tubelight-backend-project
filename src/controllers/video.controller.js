@@ -110,7 +110,7 @@ const publishOrAddAVideo = asyncHandler(async (req, res) => {
   if (!(title || !description)) {
     throw new ApiError(400, "Title and description fields are require");
   }
-  console.log(req.files);
+
   const videoLocalPath = req.files?.video[0]?.path;
   const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
@@ -149,7 +149,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   await Promise.all([
     Video.findByIdAndUpdate(
       videoId,
-      { $addToSet: { views: req.user?._id } } // $addToSet ensures no duplicates
+      { $push: { views: req.user?._id } } // $addToSet ensures no duplicates
     ),
     User.findByIdAndUpdate(req.user?._id, { $push: { watchHistory: videoId } }),
   ]);
@@ -218,7 +218,6 @@ const getVideoById = asyncHandler(async (req, res) => {
         "channel.subscribersCount": 1,
         "channel.username": 1,
         "channel.isSubscribed": 1,
-
         createdAt: 1,
         description: 1,
         duration: 1,
@@ -245,7 +244,9 @@ const updateVideo = asyncHandler(async (req, res) => {
 
   const video = await Video.findById(videoId);
 
-  if (!req.user._id.equals(video.owner)) {
+  const isOwner = await video.isOwner(req.user._id);
+
+  if (!isOwner) {
     throw new ApiError(404, "Only owner can update their video");
   }
 
@@ -256,7 +257,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Title and Description fields are required");
   }
 
-  let thumbnailPath = "";
+  let thumbnailPath;
 
   if (thumbnailLocalPath) {
     let thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
@@ -290,9 +291,10 @@ const deleteVideo = asyncHandler(async (req, res) => {
   if (!video) {
     throw new ApiError(400, "Video is not found with this id");
   }
+  const isOwner = await video.isOwner(req.user._id);
 
-  if (!req.user._id.equals(video.owner)) {
-    throw new ApiError(404, "Only owner can update their video");
+  if (!isOwner) {
+    throw new ApiError(404, "Only owner can delete their video");
   }
 
   video.deleteOne();
@@ -304,12 +306,21 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublish = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+
   if (!videoId) {
     throw new ApiError(400, "Video Id is invalid");
   }
+
   const video = await Video.findById(videoId);
+
   if (!video) {
     throw new ApiError(400, "Video is not found with this id");
+  }
+
+  const isOwner = await video.isOwner(req.user._id);
+
+  if (!isOwner) {
+    throw new ApiError(404, "Only owner can publish or unpublish their video");
   }
 
   video.isPublished = !video.isPublished;

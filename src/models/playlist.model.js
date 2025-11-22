@@ -24,4 +24,7 @@ const playListSchema = new Schema(
   { timestamps: true }
 );
 
+playListSchema.methods.isOwner = async function (userId) {
+  return this.owner.equals(userId);
+};
 export const Playlist = mongoose.model("Playlist", playListSchema);

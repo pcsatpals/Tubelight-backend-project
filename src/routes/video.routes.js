@@ -11,6 +11,7 @@ import {
 } from "../controllers/video.controller.js";
 
 const router = Router();
+router.use(verifyJWT);
 
 router
   .route("/")
@@ -28,8 +29,6 @@ router
     ]),
     publishOrAddAVideo
   );
-
-router.use(verifyJWT);
 
 router
   .route("/:videoId")
