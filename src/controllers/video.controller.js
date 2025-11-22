@@ -6,6 +6,18 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandlers.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
+const fetchRandomizedVideos = asyncHandler(async (req, res) => {
+  const videos = await Video.aggregate([
+    {
+      $sample: 10,
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, videos, "Video fetched successfully"));
+});
+
 const findAllVideos = asyncHandler(async (req, res) => {
   // Get params from the request
   const {
@@ -91,7 +103,7 @@ const findAllVideos = asyncHandler(async (req, res) => {
   });
 
   // Apply pipeline array with the aggregate function.
-  const videos = await Video.aggregate(pipeline, { page, limit });
+  const videos = await Video.aggregatePaginate(pipeline, { page, limit });
 
   return res
     .status(200)
@@ -170,6 +182,14 @@ const getVideoById = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "video",
+        as: "comments",
+      },
+    },
+    {
+      $lookup: {
         from: "users",
         localField: "owner",
         foreignField: "_id",
@@ -188,6 +208,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     {
       $addFields: {
         likesCount: { $size: "$likes" },
+        comments: { $size: "$comments" },
         views: {
           $cond: {
             if: { $isArray: "$views" },
@@ -218,6 +239,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         "channel.subscribersCount": 1,
         "channel.username": 1,
         "channel.isSubscribed": 1,
+        comments: 1,
         createdAt: 1,
         description: 1,
         duration: 1,
@@ -345,4 +367,5 @@ export {
   updateVideo,
   deleteVideo,
   togglePublish,
+  fetchRandomizedVideos,
 };

@@ -3,6 +3,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
   deleteVideo,
+  fetchRandomizedVideos,
   findAllVideos,
   getVideoById,
   publishOrAddAVideo,
@@ -11,6 +12,9 @@ import {
 } from "../controllers/video.controller.js";
 
 const router = Router();
+
+router.route("/random").get(fetchRandomizedVideos);
+
 router.use(verifyJWT);
 
 router

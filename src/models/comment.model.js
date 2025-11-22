@@ -19,6 +19,10 @@ const commentSchema = new Schema(
   { timestamps: true }
 );
 
+commentSchema.methods.isOwner = function (userId) {
+  return this.owner.equals(userId);
+};
+
 commentSchema.plugin(mongooseAggregatePaginate);
 
-const Comment = mongoose.model("Comment", commentSchema);
+export const Comment = mongoose.model("Comment", commentSchema);
