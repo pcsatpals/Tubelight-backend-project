@@ -30,9 +30,7 @@ import likeRouter from "./routes/like.routes.js";
 import commentRouter from "./routes/comment.routes.js";
 
 app.use("/api", swaggerUi.serve, swaggerUi.setup(specs));
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
+
 // routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/video", videoRouter);
