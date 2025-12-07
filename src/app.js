@@ -3,24 +3,6 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { specs, swaggerUi } from "./swagger.js";
 
-// --- MongoDB serverless-safe connection ---
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-async function connectDB() {
-  if (cached.conn) return cached.conn;
-  if (!cached.promise) {
-    cached.promise = mongoose
-      .connect(process.env.MONGO_URI)
-      .then((mongoose) => mongoose);
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
-}
-
 const app = express();
 
 app.use(
@@ -48,7 +30,9 @@ import likeRouter from "./routes/like.routes.js";
 import commentRouter from "./routes/comment.routes.js";
 
 app.use("/api", swaggerUi.serve, swaggerUi.setup(specs));
-
+app.get("/", (req, res) => {
+  res.send("Hello World");
+});
 // routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/video", videoRouter);
