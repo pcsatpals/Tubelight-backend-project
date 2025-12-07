@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { specs, swaggerUi } from "./swagger.js";
 
 const app = express();
 
@@ -22,12 +23,13 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 //routes import
-
 import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.routes.js";
 import playlistRouter from "./routes/playlist.routes.js";
 import likeRouter from "./routes/like.routes.js";
 import commentRouter from "./routes/comment.routes.js";
+
+app.use("/api", swaggerUi.serve, swaggerUi.setup(specs));
 
 // routes declaration
 app.use("/api/v1/users", userRouter);
