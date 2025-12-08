@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { specs, swaggerUi } from "./swagger.js";
+import { ApiError } from "./utils/ApiError.js";
 
 const app = express();
 
@@ -39,5 +40,24 @@ app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/playlist", playlistRouter);
 app.use("/api/v1/like", likeRouter);
 app.use("/api/v1/comment", commentRouter);
+
+// To throw error in a json format
+app.use((err, req, res, next) => {
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      errors: err.errors,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  }
+
+  // fallback for other errors
+  return res.status(500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
+});
 
 export { app };
