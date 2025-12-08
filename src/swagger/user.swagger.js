@@ -43,6 +43,8 @@
  *             properties:
  *               username:
  *                 type: string
+ *               fullName:
+ *                 type: string
  *               email:
  *                 type: string
  *               password:
