@@ -1,12 +1,13 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { nanoid } from "nanoid";
 
 const userSchema = new Schema(
   {
     username: {
       type: String,
-      required: true,
+      // required: true,
       unique: true,
       lowercase: true,
       trim: true,
@@ -52,6 +53,18 @@ const userSchema = new Schema(
 );
 
 userSchema.pre("save", async function (next) {
+  // 1. GENERIC UNIQUE ID LOGIC (Only runs on first creation)
+  if (this.isNew) {
+    const slug = this.fullName
+      ?.toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "") // Remove special characters
+      .replace(/[\s_-]+/g, "-") // Replace spaces with hyphens
+      .replace(/^-+|-+$/g, ""); // Trim hyphens
+
+    this.username = `${slug}-${nanoid(6)}`;
+  }
+
   if (!this.isModified("password")) return; // Return nothing if PW is not modified
 
   this.password = await bcrypt.hash(this.password, 10);

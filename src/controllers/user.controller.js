@@ -42,8 +42,8 @@ const registerUser = asyncHandler(async (req, res) => {
   // check for user creation
   // return res
 
-  const { username, email, fullName, password } = req.body;
-  const isBodyValidate = [username, email, fullName, password].some(
+  const { email, fullName, password } = req.body;
+  const isBodyValidate = [email, fullName, password].some(
     (field) => field.trim() != ""
   );
 
@@ -51,7 +51,8 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
   const existedUser = await User.findOne({
-    $or: [{ email }, { username }],
+    // $or: [{ email }, { username }],
+    email,
   });
 
   if (existedUser) {
@@ -77,14 +78,19 @@ const registerUser = asyncHandler(async (req, res) => {
     );
   }
 
-  const user = await User.create({
-    avatar: avatar?.url,
-    coverImage: coverImage?.url || "",
-    email,
-    password,
-    username: username.toLowerCase(),
-    fullName,
-  });
+  const user = await User(
+    {
+      avatar: avatar?.url,
+      coverImage: coverImage?.url || "",
+      email,
+      password,
+      fullName,
+    },
+    { validateBeforeSave: false }
+  );
+
+  // Use .save() with the validation flag
+  await user.save({ validateBeforeSave: false });
 
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
