@@ -13,30 +13,10 @@ import {
 
 const router = Router();
 
-/**
- * @swagger
- * /api/v1/video/random:
- *   get:
- *     summary: Get random videos
- *     tags: [Video]
- *     responses:
- *       200:
- *         description: List of random videos
- */
 router.route("/random").get(fetchRandomizedVideos);
 
 router.use(verifyJWT);
 
-/**
- * @swagger
- * /api/v1/video:
- *   get:
- *     summary: Get all videos
- *     tags: [Video]
- *     responses:
- *       200:
- *         description: All videos fetched successfully
- */
 router
   .route("/")
   .get(findAllVideos)
@@ -54,16 +34,6 @@ router
     publishOrAddAVideo
   );
 
-/**
- * @swagger
- * /api/v1/video:
- *   get:
- *     summary: Get all videos
- *     tags: [Video]
- *     responses:
- *       200:
- *         description: All videos fetched successfully
- */
 router
   .route("/:videoId")
   .get(getVideoById)
