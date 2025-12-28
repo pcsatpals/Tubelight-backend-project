@@ -106,36 +106,57 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  // Get credentials from the client
-  // All fields like email/username and password are still there
-  // User find
-  // password check
-  // need to generate access and refresh token
-  // send tokens into cookies
-  // return response
+  const { email, password, username, externalId, provider, fullName, avatar } =
+    req.body;
 
-  const { username, email, password } = req.body;
-  if (!username && !email) {
-    throw new ApiError(400, "username or email is required");
+  let user;
+  if (externalId) {
+    // Find user by externalId or email
+    user = await User.findOne({
+      $or: [{ externalId }, { email }],
+    });
+
+    if (!user) {
+      // If social user doesn't exist, create them on the fly
+      // This acts as a "Register + Login" combined for Social
+      user = await User.create({
+        fullName,
+        email,
+        avatar, // URL from Google/Apple
+        provider: provider || "google",
+        externalId,
+      });
+      console.log("User Crated", user);
+    } else if (!user.externalId) {
+      // Link account if user existed via local but now logs in via social
+      user.externalId = externalId;
+      user.provider = provider;
+      await user.save({ validateBeforeSave: false });
+    }
+  }
+  // --- LOCAL LOGIN LOGIC ---
+  else {
+    if (!username && !email) {
+      throw new ApiError(400, "Username or email is required");
+    }
+
+    user = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+
+    if (!user) throw new ApiError(404, "User does not exist");
+
+    const isPasswordCorrect = await user.isPasswordCorrect(password);
+    if (!isPasswordCorrect) {
+      throw new ApiError(401, "Invalid user credentials");
+    }
   }
 
-  const user = await User.findOne({
-    $or: [{ username }, { email }],
-  });
-
-  if (!user) throw new ApiError(400, "User does not exist");
-
-  // Get methods from the user because we are getting user from the db and we have instance of user
-  const isPasswordCorrect = await user.isPasswordCorrect(password);
-
-  if (!isPasswordCorrect) {
-    throw new ApiError(401, "Invalid user credentials");
-  }
+  // --- SHARED TOKEN GENERATION ---
   const { refreshToken, accessToken } = await generateAccessAndRefreshTokens(
     user._id
   );
 
-  // Get user without password and refresh token
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
@@ -147,12 +168,8 @@ const loginUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        {
-          user: loggedInUser,
-          accessToken,
-          refreshToken,
-        },
-        "User logged in successfully"
+        { user: loggedInUser, accessToken, refreshToken },
+        "Login successful"
       )
     );
 });

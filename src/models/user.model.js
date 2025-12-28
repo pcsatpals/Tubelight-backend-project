@@ -41,10 +41,25 @@ const userSchema = new Schema(
     ],
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: [
+        function () {
+          return this.provider === "local";
+        },
+        "Password is required for local login",
+      ],
     },
     refreshToken: {
       type: String,
+    },
+    // NEW FIELDS FOR SOCIAL LOGIN
+    provider: {
+      type: String,
+      enum: ["local", "google", "apple"],
+      default: "local",
+    },
+    externalId: {
+      type: String, // ID from Google/Apple
+      index: true,
     },
   },
   {
@@ -65,13 +80,14 @@ userSchema.pre("save", async function (next) {
     this.username = `${slug}-${nanoid(6)}`;
   }
 
-  if (!this.isModified("password")) return; // Return nothing if PW is not modified
+  if (!this.password || !this.isModified("password")) return next();
 
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
+  if (!this.password) return false;
   return await bcrypt.compare(password, this.password);
 };
 
