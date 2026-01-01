@@ -216,6 +216,18 @@ const getVideoById = asyncHandler(async (req, res) => {
             else: { $ifNull: ["$views", 0] },
           },
         },
+        isLiked: {
+          $cond: {
+            if: {
+              $in: [
+                new mongoose.Types.ObjectId(req.user._id),
+                "$likes.likedBy",
+              ],
+            },
+            then: true,
+            else: false,
+          },
+        },
         "channel.subscribersCount": { $size: "$subscribers" },
         "channel.isSubscribed": {
           $cond: {
@@ -240,6 +252,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         "channel.username": 1,
         "channel.isSubscribed": 1,
         comments: 1,
+        isLiked: 1,
         createdAt: 1,
         description: 1,
         duration: 1,
