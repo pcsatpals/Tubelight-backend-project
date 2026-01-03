@@ -15,7 +15,6 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 
   if (isLiked) {
     const like = await isLiked.deleteOne();
-    await isLiked.save();
     return res.status(200).json(new ApiResponse(200, like, "Video Unliked"));
   } else {
     const like = await Like.create({
