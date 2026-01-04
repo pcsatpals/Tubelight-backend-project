@@ -39,14 +39,15 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 
   if (isLiked) {
     const like = await isLiked.deleteOne();
-    await isLiked.save();
-    return res.status(200).json(new ApiResponse(200, like, "Video Unliked"));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, like, "Comment Unlike successfully"));
   } else {
     const like = await Like.create({
       comment: commentId,
       likedBy: req.user._id,
     });
-    return res.status(200).json(new ApiResponse(200, like, "Video Liked"));
+    return res.status(200).json(new ApiResponse(200, like, "Comment Liked"));
   }
 });
 
