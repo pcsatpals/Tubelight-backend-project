@@ -2,6 +2,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandlers.js";
 import { User } from "../models/user.model.js";
+import { Video } from "../models/video.model.js";
 
 import mongoose from "mongoose";
 const getChannelStats = asyncHandler(async (req, res) => {
@@ -21,8 +22,69 @@ const getChannelStats = asyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "videos",
-        localField: "_id",
-        foreignField: "owner",
+        let: { userId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$owner", "$$userId"] },
+            },
+          },
+          {
+            $lookup: {
+              from: "likes",
+              let: { videoId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ["$video", "$$videoId"] },
+                  },
+                },
+              ],
+              as: "likes",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "channel",
+            },
+          },
+          { $unwind: "$channel" },
+          {
+            $addFields: {
+              likesCount: {
+                $cond: {
+                  if: { $isArray: "$likes" },
+                  then: { $size: "$likes" },
+                  else: { $ifNull: ["$likes", 0] },
+                },
+              },
+              views: {
+                $cond: {
+                  if: { $isArray: "$views" },
+                  then: { $size: "$views" },
+                  else: { $ifNull: ["$views", 0] },
+                },
+              },
+            },
+          },
+
+          {
+            $project: {
+              title: 1,
+              thumbnail: 1,
+              description: 1,
+              createdAt: 1,
+              isPublished: 1,
+              likesCount: 1,
+              views: 1,
+              duration: 1,
+              channel: 1,
+            },
+          },
+        ],
         as: "videosDetails",
       },
     },
@@ -51,21 +113,6 @@ const getChannelStats = asyncHandler(async (req, res) => {
     },
     {
       $addFields: {
-        totalViews: {
-          $sum: {
-            $map: {
-              input: "$videosDetails",
-              as: "video",
-              in: {
-                $cond: {
-                  if: { $isArray: "$$video.views" },
-                  then: { $size: "$$video.views" },
-                  else: { $ifNull: ["$$video.views", 0] },
-                },
-              },
-            },
-          },
-        },
         totalLikes: { $size: "$likesDetails" }, // count likes
         totalSubscribers: { $size: "$subscriptionsDetails" }, // count subscribers
       },
@@ -75,13 +122,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
         username: 1,
         totalLikes: 1,
         totalSubscribers: 1,
-        totalViews: 1,
-        "videosDetails._id": 1,
-        "videosDetails.isPublished": 1,
-        "videosDetails.thumbnail": 1,
-        "videosDetails.title": 1,
-        "videosDetails.description": 1,
-        "videosDetails.createdAt": 1,
+        videosDetails: 1,
       },
     },
   ]);
@@ -92,7 +133,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Fetching Channel Stats Successful"));
+    .json(new ApiResponse(200, user[0], "Fetching Channel Stats Successful"));
 });
 
 const getChannelVideos = asyncHandler(async (req, res) => {
