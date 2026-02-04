@@ -29,6 +29,10 @@ const videoSchema = new Schema(
         ref: "User",
       },
     ],
+    isPublic: {
+      type: Boolean,
+      default: true,
+    },
     isPublished: {
       type: Boolean,
       default: true,
