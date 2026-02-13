@@ -4,6 +4,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
+import { isValidObjectId } from "mongoose";
+import { Subscription } from "../models/subscription.model.js";
 
 const options = {
   httpsOnly: true,
@@ -489,6 +491,33 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const subscribeUserChannel = asyncHandler(async (req, res) => {
+  const { channelId } = req.body;
+  console.log(channelId);
+  if (!isValidObjectId(channelId) || channelId === req.user._id) {
+    throw new ApiError(400, "Invalid User ID");
+  }
+  const isSubscribed = await Subscription.findOne({
+    channel: channelId,
+    subscriber: req.user._id,
+  });
+
+  if (isSubscribed) {
+    const subscription = await isSubscribed.deleteOne();
+    return res
+      .status(201)
+      .json(new ApiResponse(201, subscription, "Channel Unsubscribed"));
+  } else {
+    const subscription = await Subscription.create({
+      channel: channelId,
+      subscriber: req.user._id,
+    });
+    return res
+      .status(201)
+      .json(new ApiResponse(201, subscription, "Channel Subscribed"));
+  }
+});
+
 export {
   registerUser,
   loginUser,
@@ -501,4 +530,5 @@ export {
   updateUserCoverImage,
   getChannelProfile,
   getWatchHistory,
+  subscribeUserChannel,
 };

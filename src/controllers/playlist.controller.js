@@ -180,16 +180,15 @@ const getPlaylistByPlaylistID = asyncHandler(async (req, res) => {
 });
 
 const addVideoInPlayList = asyncHandler(async (req, res) => {
-  const { videoId, playListId } = req.body;
+  const { videoId, playlistId } = req.body;
 
-  // VideoId and PlaylistId are valid
   // Playlist Owner and video Owners are same to the req.user._id
-  if (!isValidObjectId(videoId) || !isValidObjectId(playListId)) {
+  if (!isValidObjectId(videoId) || !isValidObjectId(playlistId)) {
     throw new ApiError(400, "Invalid Video Id or PlaylistId");
   }
 
   const video = await Video.findById(videoId);
-  const playList = await Playlist.findById(playListId);
+  const playList = await Playlist.findById(playlistId);
 
   if (!video) {
     throw new ApiError(404, "Video not found");

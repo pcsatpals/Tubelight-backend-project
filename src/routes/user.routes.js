@@ -8,6 +8,7 @@ import {
   logOutUser,
   refreshAccessToken,
   registerUser,
+  subscribeUserChannel,
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
@@ -43,6 +44,7 @@ router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
 
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
+router.route("/subscribe").post(verifyJWT, subscribeUserChannel);
 
 router
   .route("/avatar")
