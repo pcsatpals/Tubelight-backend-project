@@ -50,6 +50,15 @@ const deletePlayList = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Only owner can delete their playlist");
   }
 
+  // Delete all videos in the playlist
+  if (playlist.videos.length > 0) {
+    try {
+      await Video.deleteMany({ _id: { $in: playlist.videos } });
+    } catch (error) {
+      console.log("Error while deleting videos in playlist", error);
+    }
+  }
+
   await playlist.deleteOne();
 
   return res

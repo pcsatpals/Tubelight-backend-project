@@ -1,5 +1,6 @@
 import mongoose, { isValidObjectId, Schema } from "mongoose";
 import { Video } from "../models/video.model.js";
+import { Playlist } from "../models/playlist.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -332,7 +333,17 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Only owner can delete their video");
   }
 
-  video.deleteOne();
+ await video.deleteOne();
+
+  // Unlink the video from all playlists
+  await Playlist.updateMany(
+    { videos: videoId },
+    {
+      $pull: {
+        videos: videoId,
+      },
+    }
+  );
 
   return res
     .status(201)

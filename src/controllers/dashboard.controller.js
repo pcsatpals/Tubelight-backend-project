@@ -90,6 +90,46 @@ const getChannelStats = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
+        from: "playlists",
+        localField: "_id",
+        foreignField: "owner",
+        as: "playlistsDetails",
+        pipeline: [
+          {
+            $lookup: {
+              from: "videos",
+              localField: "videos.0", // Look up the first video ID
+              foreignField: "_id",
+              as: "firstVideo",
+            },
+          },
+          {
+            $addFields: {
+              videosCount: {
+                $size: "$videos",
+              },
+              thumbnail: {
+                $cond: {
+                  if: { $isArray: "$firstVideo" },
+                  then: { $arrayElemAt: ["$firstVideo.thumbnail", 0] },
+                  else: null,
+                },
+              },
+            },
+          },
+          {
+            $project:{
+              name:1,
+              description:1,
+              thumbnail:1,
+              videosCount:1,
+            }
+          }
+        ],
+      },
+    },
+    {
+      $lookup: {
         from: "subscriptions",
         localField: "_id",
         foreignField: "channel",
@@ -123,6 +163,7 @@ const getChannelStats = asyncHandler(async (req, res) => {
         totalLikes: 1,
         totalSubscribers: 1,
         videosDetails: 1,
+        playlistsDetails:1
       },
     },
   ]);

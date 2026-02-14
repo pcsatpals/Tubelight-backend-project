@@ -382,6 +382,117 @@ const getChannelProfile = asyncHandler(async (req, res) => {
         as: "subscribedTo",
       },
     },
+   {
+      $lookup: {
+        from: "videos",
+        let: { userId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$owner", "$$userId"] },
+            },
+          },
+          {
+            $lookup: {
+              from: "likes",
+              let: { videoId: "$_id" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ["$video", "$$videoId"] },
+                  },
+                },
+              ],
+              as: "likes",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "channel",
+            },
+          },
+          { $unwind: "$channel" },
+          {
+            $addFields: {
+              likesCount: {
+                $cond: {
+                  if: { $isArray: "$likes" },
+                  then: { $size: "$likes" },
+                  else: { $ifNull: ["$likes", 0] },
+                },
+              },
+              views: {
+                $cond: {
+                  if: { $isArray: "$views" },
+                  then: { $size: "$views" },
+                  else: { $ifNull: ["$views", 0] },
+                },
+              },
+            },
+          },
+
+          {
+            $project: {
+              title: 1,
+              thumbnail: 1,
+              description: 1,
+              createdAt: 1,
+              isPublished: 1,
+              likesCount: 1,
+              views: 1,
+              duration: 1,
+              "channel.email": 1,
+              "channel.fullName": 1,
+              "channel.avatar": 1,
+            },
+          },
+        ],
+        as: "videosDetails",
+      },
+    },
+    {
+      $lookup: {
+        from: "playlists",
+        localField: "_id",
+        foreignField: "owner",
+        as: "playlistsDetails",
+        pipeline: [
+          {
+            $lookup: {
+              from: "videos",
+              localField: "videos.0", // Look up the first video ID
+              foreignField: "_id",
+              as: "firstVideo",
+            },
+          },
+          {
+            $addFields: {
+              videosCount: {
+                $size: "$videos",
+              },
+              thumbnail: {
+                $cond: {
+                  if: { $isArray: "$firstVideo" },
+                  then: { $arrayElemAt: ["$firstVideo.thumbnail", 0] },
+                  else: null,
+                },
+              },
+            },
+          },
+          {
+            $project:{
+              name:1,
+              description:1,
+              thumbnail:1,
+              videosCount:1,
+            }
+          }
+        ],
+      },
+    },
     // 4th pipeline
     // With add fields we can create or add fields in response
     {
@@ -417,6 +528,8 @@ const getChannelProfile = asyncHandler(async (req, res) => {
         fullName: 1,
         username: 1,
         email: 1,
+         videosDetails: 1,
+        playlistsDetails:1,
         subscribersCount: 1,
         channelsSubscribedToCount: 1,
         isSubscribed: 1,
