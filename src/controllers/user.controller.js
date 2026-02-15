@@ -366,7 +366,7 @@ const getChannelProfile = asyncHandler(async (req, res) => {
     // getting subscribers of the channel which we are getting from the first pipeline
     {
       $lookup: {
-        from: "Subscriptions",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "channel",
         as: "subscribers",
@@ -376,7 +376,7 @@ const getChannelProfile = asyncHandler(async (req, res) => {
     // getting the count of the channels that user subscribed from its channel which we are getting from the first pipeline
     {
       $lookup: {
-        from: "Subscriptions",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "subscriber",
         as: "subscribedTo",

@@ -172,20 +172,28 @@ const getPlaylistByPlaylistID = asyncHandler(async (req, res) => {
     },
     {
       $addFields: {
+        thumbnail: {
+          $cond: {
+            if: { $isArray: "$videos" },
+            then: { $arrayElemAt: ["$videos.thumbnail", 0] },
+            else: null,
+          },
+        },
         videosCount: {
           $size: "$videos",
         },
       },
     },
+    
   ]);
 
-  if (!playList) {
+  if (!playList || playList.length === 0) {
     throw new ApiError(400, "Playlist's not found");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, playList, "Playlist fetched Successfully"));
+    .json(new ApiResponse(200, playList[0], "Playlist fetched Successfully"));
 });
 
 const addVideoInPlayList = asyncHandler(async (req, res) => {
