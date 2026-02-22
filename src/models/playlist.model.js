@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const playListSchema = new Schema(
   {
@@ -27,4 +28,7 @@ const playListSchema = new Schema(
 playListSchema.methods.isOwner = async function (userId) {
   return this.owner.equals(userId);
 };
+
+playListSchema.plugin(mongooseAggregatePaginate);
+
 export const Playlist = mongoose.model("Playlist", playListSchema);

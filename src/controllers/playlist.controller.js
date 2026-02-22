@@ -90,6 +90,99 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     );
 });
 
+const getAllPlaylists = asyncHandler(async (req, res) => {
+
+  const {
+    page = 1,
+    limit = 10,
+    q = ""
+  } = req.query;
+
+  const pipeline = [
+    {
+      $match: {
+        $or: [
+          { name: { $regex: q, $options: "i" } },
+          { description: { $regex: q, $options: "i" } },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: "$owner",
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "videos",
+        foreignField: "_id",
+        as: "videos",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $unwind: "$owner",
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        thumbnail: {
+          $cond: {
+            if: { $isArray: "$videos" },
+            then: { $arrayElemAt: ["$videos.thumbnail", 0] },
+            else: null,
+          },
+        },
+        videosCount: {
+          $size: "$videos",
+        },
+      },
+    }
+  ]
+  const playLists = await Playlist.aggregatePaginate(pipeline, {
+    page,
+    limit
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, playLists, "Playlists fetched Successfully")
+    );
+});
+
 const getPlaylistByPlaylistID = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
 
@@ -184,7 +277,7 @@ const getPlaylistByPlaylistID = asyncHandler(async (req, res) => {
         },
       },
     },
-    
+
   ]);
 
   if (!playList || playList.length === 0) {
@@ -287,4 +380,5 @@ export {
   addVideoInPlayList,
   removeVideoFromPlayList,
   deletePlayList,
+  getAllPlaylists
 };

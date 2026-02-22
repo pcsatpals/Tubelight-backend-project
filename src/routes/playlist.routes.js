@@ -3,6 +3,7 @@ import {
   addVideoInPlayList,
   createPlayList,
   deletePlayList,
+  getAllPlaylists,
   getPlaylistByPlaylistID,
   getUserPlaylists,
   removeVideoFromPlayList,
@@ -12,7 +13,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 router.use(verifyJWT);
-router.route("/").post(createPlayList);
+router.route("/").post(createPlayList).get(getAllPlaylists);
 router.route("/user/:userId").get(getUserPlaylists);
 router
   .route("/:playlistId")
