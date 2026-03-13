@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { Subscription } from "../models/subscription.model.js";
 
 const options = {
@@ -318,7 +318,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
-  return res.status(200).json(200, user, "Avatar updated successfully");
+  return res.status(200).json(new ApiResponse(200, user, "Avatar updated successfully"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
@@ -342,7 +342,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
-  return res.status(200).json(200, user, "coverImage updated successfully");
+  return res.status(200).json(new ApiResponse(200, user, "coverImage updated successfully"));
 });
 
 const getChannelProfile = asyncHandler(async (req, res) => {
@@ -382,7 +382,7 @@ const getChannelProfile = asyncHandler(async (req, res) => {
         as: "subscribedTo",
       },
     },
-   {
+    {
       $lookup: {
         from: "videos",
         let: { userId: "$_id" },
@@ -483,11 +483,11 @@ const getChannelProfile = asyncHandler(async (req, res) => {
             },
           },
           {
-            $project:{
-              name:1,
-              description:1,
-              thumbnail:1,
-              videosCount:1,
+            $project: {
+              name: 1,
+              description: 1,
+              thumbnail: 1,
+              videosCount: 1,
             }
           }
         ],
@@ -528,8 +528,8 @@ const getChannelProfile = asyncHandler(async (req, res) => {
         fullName: 1,
         username: 1,
         email: 1,
-         videosDetails: 1,
-        playlistsDetails:1,
+        videosDetails: 1,
+        playlistsDetails: 1,
         subscribersCount: 1,
         channelsSubscribedToCount: 1,
         isSubscribed: 1,
@@ -561,14 +561,13 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         localField: "watchHistory",
         foreignField: "_id",
         as: "watchHistory",
-        // nested Pipelines
         pipeline: [
           {
             $lookup: {
               from: "users",
               localField: "owner",
               foreignField: "_id",
-              as: "owner",
+              as: "channel",
               pipeline: [
                 {
                   $project: {
@@ -577,17 +576,45 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                     avatar: 1,
                   },
                 },
-                {
-                  $addFields: {
-                    // This will overwrite the "owner" field with the object which is stored in first index of array instead of returning the full array
-                    owner: {
-                      $isFirst: "$owner",
-                    },
-                  },
-                },
               ],
             },
           },
+          {
+            $unwind: "$channel",
+          },
+          {
+            $addFields: {
+              views: {
+                $cond: {
+                  if: { $isArray: "$views" },
+                  then: { $size: "$views" },
+                  else: { $ifNull: ["$views", 0] },
+                },
+              },
+              likesCount: {
+                $cond: {
+                  if: { $isArray: "$likes" },
+                  then: { $size: "$likes" },
+                  else: { $ifNull: ["$likes", 0] },
+                },
+              },
+            }
+          },
+          {
+            $project: {
+              title: 1,
+              thumbnail: 1,
+              description: 1,
+              createdAt: 1,
+              isPublished: 1,
+              likesCount: 1,
+              views: 1,
+              duration: 1,
+              "channel.email": 1,
+              "channel.fullName": 1,
+              "channel.avatar": 1,
+            },
+          }
         ],
       },
     },
